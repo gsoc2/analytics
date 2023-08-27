@@ -7,14 +7,18 @@ defmodule PlausibleWeb.Live.ChoosePlanTest do
   @yearly_interval_button ~s/label[phx-click="set_interval"][phx-value-interval="yearly"]/
   @interval_button_active_class "bg-indigo-600 text-white"
   @slider_input ~s/input[name="slider"]/
+
   @plan_box_growth "#plan-box-growth"
-  @plan_box_business "#plan-box-business"
   @growth_price_tag_amount "#{@plan_box_growth} > p > span:first-child"
   @growth_price_tag_interval "#{@plan_box_growth} > p > span:nth-child(2)"
   @growth_current_label "#{@plan_box_growth} > div.absolute"
+  @growth_payout_button "#{@plan_box_growth} > button"
+
+  @plan_box_business "#plan-box-business"
   @business_price_tag_amount "#{@plan_box_business} > p > span:first-child"
   @business_price_tag_interval "#{@plan_box_business} > p > span:nth-child(2)"
   @business_current_label "#{@plan_box_business} > div.absolute"
+  @business_payout_button "#{@plan_box_business} > button"
 
   describe "for a user with no subscription" do
     setup [:create_user, :log_in]
@@ -31,30 +35,13 @@ defmodule PlausibleWeb.Live.ChoosePlanTest do
     test "default billing interval is monthly, and can switch to yearly", %{conn: conn} do
       {:ok, lv, doc} = get_liveview(conn)
 
-      doc
-      |> find(@monthly_interval_button)
-      |> text_of_attr("class")
-      |> then(fn class -> assert class =~ @interval_button_active_class end)
+      assert class_of_element(doc, @monthly_interval_button) =~ @interval_button_active_class
+      refute class_of_element(doc, @yearly_interval_button) =~ @interval_button_active_class
 
-      doc
-      |> find(@yearly_interval_button)
-      |> text_of_attr("class")
-      |> then(fn class -> refute class =~ @interval_button_active_class end)
+      doc = element(lv, @yearly_interval_button) |> render_click()
 
-      doc =
-        lv
-        |> element(@yearly_interval_button)
-        |> render_click()
-
-      doc
-      |> find(@monthly_interval_button)
-      |> text_of_attr("class")
-      |> then(fn class -> refute class =~ @interval_button_active_class end)
-
-      doc
-      |> find(@yearly_interval_button)
-      |> text_of_attr("class")
-      |> then(fn class -> assert class =~ @interval_button_active_class end)
+      refute class_of_element(doc, @monthly_interval_button) =~ @interval_button_active_class
+      assert class_of_element(doc, @yearly_interval_button) =~ @interval_button_active_class
     end
 
     test "default pageview limit is 10k", %{conn: conn} do
@@ -147,11 +134,7 @@ defmodule PlausibleWeb.Live.ChoosePlanTest do
 
     test "gets default selected interval from current subscription plan", %{conn: conn} do
       {:ok, _lv, doc} = get_liveview(conn)
-
-      doc
-      |> find(@yearly_interval_button)
-      |> text_of_attr("class")
-      |> then(fn class -> assert class =~ @interval_button_active_class end)
+      assert class_of_element(doc, @yearly_interval_button) =~ @interval_button_active_class
     end
 
     test "gets default pageview limit from current subscription plan", %{conn: conn} do
@@ -172,14 +155,34 @@ defmodule PlausibleWeb.Live.ChoosePlanTest do
     test "makes it clear that the user is currently on a growth tier", %{conn: conn} do
       {:ok, _lv, doc} = get_liveview(conn)
 
-      class =
-        doc
-        |> find(@plan_box_growth)
-        |> text_of_attr("class")
+      class = class_of_element(doc, @plan_box_growth)
 
       assert class =~ "ring-2"
       assert class =~ "ring-indigo-600"
       assert text_of_element(doc, @growth_current_label) == "CURRENT"
+    end
+
+    test "payout button text and CSS classes are dynamic", %{conn: conn} do
+      {:ok, lv, doc} = get_liveview(conn)
+
+      assert text_of_element(doc, @growth_payout_button) == "Currently on this plan"
+      assert class_of_element(doc, @growth_payout_button) =~ "bg-gray-400"
+      assert text_of_element(doc, @business_payout_button) == "Upgrade to Business"
+
+      doc = element(lv, @monthly_interval_button) |> render_click()
+
+      assert text_of_element(doc, @growth_payout_button) == "Change billing interval"
+      assert text_of_element(doc, @business_payout_button) == "Upgrade to Business"
+
+      doc = lv |> element(@slider_input) |> render_change(%{slider: 4})
+
+      assert text_of_element(doc, @growth_payout_button) == "Upgrade"
+      assert text_of_element(doc, @business_payout_button) == "Upgrade to Business"
+
+      doc = lv |> element(@slider_input) |> render_change(%{slider: 1})
+
+      assert text_of_element(doc, @growth_payout_button) == "Downgrade"
+      assert text_of_element(doc, @business_payout_button) == "Upgrade to Business"
     end
   end
 
@@ -194,14 +197,34 @@ defmodule PlausibleWeb.Live.ChoosePlanTest do
     test "makes it clear that the user is currently on a business tier", %{conn: conn} do
       {:ok, _lv, doc} = get_liveview(conn)
 
-      class =
-        doc
-        |> find(@plan_box_business)
-        |> text_of_attr("class")
+      class = class_of_element(doc, @plan_box_business)
 
       assert class =~ "ring-2"
       assert class =~ "ring-indigo-600"
       assert text_of_element(doc, @business_current_label) == "CURRENT"
+    end
+
+    test "payout button text and CSS classes are dynamic", %{conn: conn} do
+      {:ok, lv, doc} = get_liveview(conn)
+
+      assert text_of_element(doc, @business_payout_button) == "Currently on this plan"
+      assert class_of_element(doc, @business_payout_button) =~ "bg-gray-400"
+      assert text_of_element(doc, @growth_payout_button) == "Downgrade to Growth"
+
+      doc = element(lv, @yearly_interval_button) |> render_click()
+
+      assert text_of_element(doc, @business_payout_button) == "Change billing interval"
+      assert text_of_element(doc, @growth_payout_button) == "Downgrade to Growth"
+
+      doc = lv |> element(@slider_input) |> render_change(%{slider: 7})
+
+      assert text_of_element(doc, @business_payout_button) == "Upgrade"
+      assert text_of_element(doc, @growth_payout_button) == "Downgrade to Growth"
+
+      doc = lv |> element(@slider_input) |> render_change(%{slider: 1})
+
+      assert text_of_element(doc, @business_payout_button) == "Downgrade"
+      assert text_of_element(doc, @growth_payout_button) == "Downgrade to Growth"
     end
   end
 

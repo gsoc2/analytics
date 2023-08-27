@@ -17,6 +17,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
       |> then(fn {pageviews, custom_events} -> pageviews + custom_events end)
 
     current_user_plan = Plans.get_subscription_plan(user.subscription)
+    current_interval = current_subscription_interval(user.subscription)
     selected_volume = default_selected_volume(current_user_plan)
 
     available_plans =
@@ -32,7 +33,8 @@ defmodule PlausibleWeb.Live.ChoosePlan do
        user: user,
        usage: usage,
        current_user_plan: current_user_plan,
-       selected_interval: default_selected_interval(user.subscription),
+       current_interval: current_interval,
+       selected_interval: current_interval || :monthly,
        selected_volume: selected_volume,
        available_growth_plans: available_growth_plans,
        available_business_plans: available_business_plans,
@@ -61,12 +63,16 @@ defmodule PlausibleWeb.Live.ChoosePlan do
           <.plan_box
             name="Growth"
             owned={@current_user_plan && Map.get(@current_user_plan, :kind) == :growth}
+            current_user_plan={@current_user_plan}
+            current_interval={@current_interval}
             selected_plan={@selected_growth_plan}
             selected_interval={@selected_interval}
           />
           <.plan_box
             name="Business"
             owned={@current_user_plan && Map.get(@current_user_plan, :kind) == :business}
+            current_user_plan={@current_user_plan}
+            current_interval={@current_interval}
             selected_plan={@selected_business_plan}
             selected_interval={@selected_interval}
           />
@@ -106,10 +112,11 @@ defmodule PlausibleWeb.Live.ChoosePlan do
   defp default_selected_volume(%Plan{monthly_pageview_limit: limit}), do: limit
   defp default_selected_volume(_), do: List.first(@volumes)
 
-  defp default_selected_interval(subscription) do
+  defp current_subscription_interval(subscription) do
     case Plans.subscription_interval(subscription) do
       "yearly" -> :yearly
-      _ -> :monthly
+      "monthly" -> :monthly
+      _ -> nil
     end
   end
 
@@ -180,12 +187,9 @@ defmodule PlausibleWeb.Live.ChoosePlan do
       <p class="mt-6 flex items-baseline gap-x-1">
         <.price_tag selected_interval={@selected_interval} selected_plan={@selected_plan} />
       </p>
-      <a
-        href="#"
-        class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 text-white bg-indigo-600 hover:bg-indigo-500"
-      >
-        Upgrade
-      </a>
+      <.payout_button button_text={
+        payout_button_text(@current_user_plan, @selected_plan, @current_interval, @selected_interval)
+      } />
       <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600 xl:mt-10">
         <li class="flex gap-x-3">
           <.check_icon class="text-indigo-600" /> 5 products
@@ -201,6 +205,22 @@ defmodule PlausibleWeb.Live.ChoosePlan do
         </li>
       </ul>
     </div>
+    """
+  end
+
+  defp payout_button(assigns) do
+    ~H"""
+    <button
+      class={[
+        "w-full mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 text-white",
+        if(@button_text == "Currently on this plan",
+          do: "bg-gray-400 pointer-events-none",
+          else: "bg-indigo-600 hover:bg-indigo-500"
+        )
+      ]}
+    >
+      <%= @button_text %>
+    </button>
     """
   end
 
@@ -389,6 +409,35 @@ defmodule PlausibleWeb.Live.ChoosePlan do
       }
     </style>
     """
+  end
+
+  defp payout_button_text(nil, _, _, _), do: "Upgrade"
+
+  defp payout_button_text(
+         %Plan{kind: from_kind, monthly_pageview_limit: from_volume},
+         %Plan{kind: to_kind, monthly_pageview_limit: to_volume},
+         from_interval,
+         to_interval
+       ) do
+    cond do
+      from_kind == :business && to_kind == :growth ->
+        "Downgrade to Growth"
+
+      from_kind == :growth && to_kind == :business ->
+        "Upgrade to Business"
+
+      from_volume == to_volume && from_interval == to_interval ->
+        "Currently on this plan"
+
+      from_volume == to_volume ->
+        "Change billing interval"
+
+      from_volume > to_volume ->
+        "Downgrade"
+
+      true ->
+        "Upgrade"
+    end
   end
 
   defp volumes(), do: @volumes
