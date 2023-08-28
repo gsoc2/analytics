@@ -62,6 +62,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
         <div class="isolate mx-auto mt-10 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
           <.plan_box
             name="Growth"
+            user={@user}
             owned={@current_user_plan && Map.get(@current_user_plan, :kind) == :growth}
             current_user_plan={@current_user_plan}
             current_interval={@current_interval}
@@ -70,6 +71,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
           />
           <.plan_box
             name="Business"
+            user={@user}
             owned={@current_user_plan && Map.get(@current_user_plan, :kind) == :business}
             current_user_plan={@current_user_plan}
             current_interval={@current_interval}
@@ -83,6 +85,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
       </div>
     </form>
     <.slider_styles />
+    <.paddle_script />
     """
   end
 
@@ -187,9 +190,22 @@ defmodule PlausibleWeb.Live.ChoosePlan do
       <p class="mt-6 flex items-baseline gap-x-1">
         <.price_tag selected_interval={@selected_interval} selected_plan={@selected_plan} />
       </p>
-      <.payout_button button_text={
-        payout_button_text(@current_user_plan, @selected_plan, @current_interval, @selected_interval)
-      } />
+      <.payout_button
+        button_text={
+          payout_button_text(
+            @current_user_plan,
+            @selected_plan,
+            @current_interval,
+            @selected_interval
+          )
+        }
+        user={@user}
+        selected_plan_id={
+          if @selected_interval == :monthly,
+            do: @selected_plan.monthly_product_id,
+            else: @selected_plan.yearly_product_id
+        }
+      />
       <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600 xl:mt-10">
         <li class="flex gap-x-3">
           <.check_icon class="text-indigo-600" /> 5 products
@@ -211,8 +227,15 @@ defmodule PlausibleWeb.Live.ChoosePlan do
   defp payout_button(assigns) do
     ~H"""
     <button
+      data-theme="none"
+      data-product={@selected_plan_id}
+      data-email={@user.email}
+      data-disable-logout="true"
+      data-passthrough={@user.id}
+      data-success="/billing/upgrade-success"
+      data-init="true"
       class={[
-        "w-full mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 text-white",
+        "paddle_button w-full mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 text-white",
         if(@button_text == "Currently on this plan",
           do: "bg-gray-400 pointer-events-none",
           else: "bg-indigo-600 hover:bg-indigo-500"
@@ -347,6 +370,19 @@ defmodule PlausibleWeb.Live.ChoosePlan do
     <span class="text-sm font-semibold leading-6 text-gray-600">
       /year
     </span>
+    """
+  end
+
+  defp paddle_script(assigns) do
+    ~H"""
+    <script type="text/javascript" src="https://cdn.paddle.com/paddle/paddle.js">
+    </script>
+    <script :if={Application.get_env(:plausible, :environment) == "dev"}>
+      Paddle.Environment.set('sandbox')
+    </script>
+    <script>
+      Paddle.Setup({vendor: <%= Application.get_env(:plausible, :paddle) |> Keyword.fetch!(:vendor_id) %> })
+    </script>
     """
   end
 
