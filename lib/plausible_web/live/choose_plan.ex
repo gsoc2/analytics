@@ -45,7 +45,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
 
   def render(assigns) do
     ~H"""
-    <form class="bg-gray-100 py-12 sm:py-16">
+    <div class="bg-gray-100 py-12 sm:py-16">
       <div class="mx-auto max-w-7xl px-6 lg:px-8">
         <div class="mx-auto max-w-4xl text-center">
           <p class="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
@@ -83,7 +83,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
         <.pageview_limit_notice :if={!@current_user_plan} />
         <.help_links />
       </div>
-    </form>
+    </div>
     <.slider_styles />
     <.paddle_script />
     """
@@ -154,7 +154,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
 
   defp slider(assigns) do
     ~H"""
-    <div class="mt-6 max-w-2xl mx-auto">
+    <form class="mt-6 max-w-2xl mx-auto">
       <p class="text-xl text-gray-600 text-center">
         Monthly pageviews: <b><%= PlausibleWeb.StatsView.large_number_format(@selected_volume) %></b>
       </p>
@@ -168,7 +168,7 @@ defmodule PlausibleWeb.Live.ChoosePlan do
         step="1"
         value={Enum.find_index(volumes(), &(&1 == @selected_volume))}
       />
-    </div>
+    </form>
     """
   end
 
