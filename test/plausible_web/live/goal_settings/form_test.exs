@@ -16,19 +16,19 @@ defmodule PlausibleWeb.Live.GoalSettings.FormTest do
       assert element_exists?(html, ~s/a#event-tab/)
 
       pageview_tab = lv |> element(~s/a#pageview-tab/) |> render_click()
-      assert pageview_tab =~ "Page Path"
+      assert pageview_tab =~ "Page path"
 
       event_tab = lv |> element(~s/a#event-tab/) |> render_click()
-      assert event_tab =~ "Event Name"
+      assert event_tab =~ "Event name"
     end
 
     test "escape closes the form", %{conn: conn, site: site} do
       {parent, lv} = get_liveview(conn, site, with_parent?: true)
       html = render(parent)
-      assert html =~ "Goal Trigger"
+      assert html =~ "Goal trigger"
       render_keydown(lv, "cancel-add-goal")
       html = render(parent)
-      refute html =~ "Goal Trigger"
+      refute html =~ "Goal trigger"
     end
   end
 
