@@ -2,6 +2,7 @@ defmodule PlausibleWeb.Components.Billing do
   @moduledoc false
 
   use Phoenix.Component
+  alias PlausibleWeb.Router.Helpers, as: Routes
 
   slot(:inner_block, required: true)
   attr(:rest, :global)
@@ -41,4 +42,76 @@ defmodule PlausibleWeb.Components.Billing do
       nil -> ""
     end
   end
+
+  def monthly_quota_box(%{business_tier: true} = assigns) do
+    ~H"""
+    <div
+      class="h-32 px-2 py-4 my-4 text-center bg-gray-100 rounded dark:bg-gray-900"
+      style="width: 11.75rem;"
+    >
+      <h4 class="font-black dark:text-gray-100">Monthly quota</h4>
+      <div class="py-2 text-xl font-medium dark:text-gray-100">
+        <%= PlausibleWeb.AuthView.subscription_quota(@subscription, format: :long) %>
+      </div>
+      <%= if @subscription && @subscription.status == "past_due" do %>
+        <span
+          class="text-sm text-gray-600 dark:text-gray-400 font-medium"
+          tooltip="Please update your billing details before changing plans"
+        >
+          Change plan
+        </span>
+      <% else %>
+        <.link
+          href={Routes.billing_path(@conn, :choose_plan)}
+          class="text-sm text-indigo-500 font-medium"
+        >
+          <%= upgrade_link_text(@subscription) %>
+        </.link>
+      <% end %>
+    </div>
+    """
+  end
+
+  def monthly_quota_box(%{business_tier: false} = assigns) do
+    ~H"""
+    <div
+      class="h-32 px-2 py-4 my-4 text-center bg-gray-100 rounded dark:bg-gray-900"
+      style="width: 11.75rem;"
+    >
+      <h4 class="font-black dark:text-gray-100">Monthly quota</h4>
+      <%= if @subscription do %>
+        <div class="py-2 text-xl font-medium dark:text-gray-100">
+          <%= PlausibleWeb.AuthView.subscription_quota(@subscription) %> pageviews
+        </div>
+
+        <.link
+          :if={@subscription.status == "active"}
+          href={Routes.billing_path(@conn, :change_plan_form)}
+          class="text-sm text-indigo-500 font-medium"
+        >
+          Change plan
+        </.link>
+
+        <span
+          :if={@subscription.status == "past_due"}
+          class="text-sm text-gray-600 dark:text-gray-400 font-medium"
+          tooltip="Please update your billing details before changing plans"
+        >
+          Change plan
+        </span>
+      <% else %>
+        <div class="py-2 text-xl font-medium dark:text-gray-100">Free trial</div>
+        <.link
+          href={Routes.billing_path(@conn, :upgrade)}
+          class="text-sm text-indigo-500 font-medium"
+        >
+          Upgrade
+        </.link>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp upgrade_link_text(nil), do: "Upgrade"
+  defp upgrade_link_text(_subscription), do: "Change plan"
 end
