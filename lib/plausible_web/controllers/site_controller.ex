@@ -239,6 +239,19 @@ defmodule PlausibleWeb.SiteController do
     )
   end
 
+  def settings_plugins(conn, _params) do
+    site = conn.assigns[:site]
+
+    conn
+    |> assign(:skip_plausible_tracking, true)
+    |> render("settings_plugins.html",
+      site: site,
+      dogfood_page_path: "/:dashboard/settings/plugins",
+      connect_live_socket: true,
+      layout: {PlausibleWeb.LayoutView, "site_settings.html"}
+    )
+  end
+
   def settings_props(conn, _params) do
     site = conn.assigns[:site] |> Repo.preload(:custom_domain)
 
