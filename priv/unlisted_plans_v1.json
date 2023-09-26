@@ -7,6 +7,7 @@
     "monthly_product_id":null,
     "monthly_cost":null,
     "site_limit":50,
-    "team_member_limit":"unlimited"
+    "team_member_limit":"unlimited",
+    "extra_features":[]
   }
 ]
