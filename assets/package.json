@@ -36,7 +36,7 @@
     "dayjs": "^1.11.7",
     "debounce-promise": "^3.1.2",
     "iframe-resizer": "^4.3.2",
-    "mini-css-extract-plugin": "^1.6.0",
+    "mini-css-extract-plugin": "^2.7.6",
     "phoenix": "^1.7.2",
     "phoenix_html": "^3.3.1",
     "phoenix_live_view": "^0.18.18",
