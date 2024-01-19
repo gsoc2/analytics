@@ -11,9 +11,9 @@
     "bundlemon": "bundlemon"
   },
   "dependencies": {
-    "@babel/core": "^7.14.3",
-    "@babel/preset-env": "^7.14.4",
-    "@babel/preset-react": "^7.13.13",
+    "@babel/core": "^7.23.6",
+    "@babel/preset-env": "^7.23.6",
+    "@babel/preset-react": "^7.23.3",
     "@headlessui/react": "^1.7.10",
     "@heroicons/react": "^2.0.11",
     "@juggle/resize-observer": "^3.3.1",
